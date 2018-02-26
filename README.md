@@ -6,6 +6,10 @@
 * This application assumes that each event is in one line on the log file so currently using FlatFileStreamReader. We can extend spring batch to implement any custom logic.
 * Please feel free to reach out to me for any questions. 
 
+FUTURE ROADMAP:
+
+If we know the application is going to be on linux environment then we can use split command to split the log file and process individul files using mutlithreading approach. If we need to design for all the environments then we may need to design the source system to write the logs in multipart rather than writing to a large file.
+
 
 
 
