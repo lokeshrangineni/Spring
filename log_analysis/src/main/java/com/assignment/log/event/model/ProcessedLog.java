@@ -1,5 +1,11 @@
 package com.assignment.log.event.model;
-
+/**
+ * 
+ * Once the log event is processed we will store processed log information in this POJO.
+ * @author Lokesh
+ * Since 02/25/2018
+ *
+ */
 public class ProcessedLog {
 	private String id;
 	private String type;

@@ -1,10 +1,16 @@
 package com.assignment.log.event.model;
 
 import java.util.Objects;
-
+/**
+ * POJO class to hold log events coming from the log file. 
+ * 
+ * @author Lokesh
+ * Since 02/25/2018
+ *
+ */
 public class LogEvent {
 	private String id;
-	private String state;
+	private LogStateEnum state;
 	private String type;
 	private String host;
 	private long timestamp;
@@ -15,10 +21,10 @@ public class LogEvent {
 	public void setId(String id) {
 		this.id = id;
 	}
-	public String getState() {
+	public LogStateEnum getState() {
 		return state;
 	}
-	public void setState(String state) {
+	public void setState(LogStateEnum state) {
 		this.state = state;
 	}
 	public String getType() {
@@ -60,6 +66,6 @@ public class LogEvent {
 	
 	@Override
 	public String toString() {
-		return "In ProcessedLog. ID=["+this.id+"], host=["+this.host+"], state=["+this.state+"], timestamp=["+this.timestamp+"]";
+		return "In LogEvent: ID=["+this.id+"], host=["+this.host+"], state=["+this.state+"], timestamp=["+this.timestamp+"]";
 	}
 }

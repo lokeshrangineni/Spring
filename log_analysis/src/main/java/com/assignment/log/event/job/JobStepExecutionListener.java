@@ -13,7 +13,13 @@ import org.springframework.stereotype.Component;
 
 import com.assignment.log.event.model.LogEvent;
 import com.assignment.log.event.service.ILogEventsService;
-
+/**
+ * 
+ *  Job Step processing listener to capture starting and ending events so that we can implement some logic.
+ * @author Lokesh
+ * Since 02/25/2018
+ *
+ */
 @Component
 public class JobStepExecutionListener implements StepExecutionListener {
 

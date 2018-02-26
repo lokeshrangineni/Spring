@@ -11,7 +11,13 @@ import org.springframework.stereotype.Component;
 
 import com.assignment.log.event.model.LogEvent;
 import com.assignment.log.event.service.ILogEventsService;
-
+/**
+ * This is a callable class so that executor service can span multiple threads to process log events asynchronously. 
+ * 
+ * @author Lokesh
+ * Since 02/25/2018
+ *
+ */
 @ComponentScan
 @Component
 @Scope("prototype")

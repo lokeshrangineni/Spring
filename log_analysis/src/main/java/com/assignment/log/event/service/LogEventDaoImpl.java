@@ -14,8 +14,15 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
 import com.assignment.log.event.model.LogEvent;
+import com.assignment.log.event.model.LogStateEnum;
 import com.assignment.log.event.model.ProcessedLog;
-
+/**
+ *  DAO class responsible to interact with database.
+ * 
+ * @author Lokesh
+ * Since 02/25/2018
+ *
+ */
 @Repository
 @ComponentScan
 public class LogEventDaoImpl implements ILogEventsDao {
@@ -52,7 +59,7 @@ public class LogEventDaoImpl implements ILogEventsDao {
 					LogEvent logEvent = batchList.get(i);
 					ps.setString(1, logEvent.getId());
 					ps.setString(2, logEvent.getHost());
-					ps.setString(3, logEvent.getState());
+					ps.setString(3, logEvent.getState().toString());
 					ps.setString(4, logEvent.getType());
 					ps.setLong(5, logEvent.getTimestamp());
 				}
@@ -74,7 +81,7 @@ public class LogEventDaoImpl implements ILogEventsDao {
 						LogEvent log = new LogEvent();
 						log.setId(rs.getString("ID"));
 						log.setHost(rs.getString("HOST"));
-						log.setState(rs.getString("STATE"));
+						log.setState(LogStateEnum.valueOf(rs.getString("STATE")));
 						log.setType(rs.getString("TYPE"));
 						log.setTimestamp(rs.getLong("TIMESTAMP"));
 						return log;

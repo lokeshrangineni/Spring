@@ -5,7 +5,13 @@ import java.util.Map;
 
 import com.assignment.log.event.model.LogEvent;
 import com.assignment.log.event.model.ProcessedLog;
-
+/**
+ * service interface to include all the business logic for this application.
+ * 
+ * @author Lokesh
+ * Since 02/25/2018
+ *
+ */
 public interface ILogEventsService {
 	
 	public void saveLongTimeTakingEvents(ProcessedLog processedLog) throws LogEventServiceException;

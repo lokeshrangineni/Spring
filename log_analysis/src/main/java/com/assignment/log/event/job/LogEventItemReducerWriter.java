@@ -20,7 +20,14 @@ import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import com.assignment.log.event.model.LogEvent;
 import com.assignment.log.event.service.ILogEventsService;
 import com.assignment.log.event.service.LogEventServiceException;
-
+/**
+ * Job step writer. This is class is having all the logic to reduce the number of events by finding long time taking events. 
+ * This class will span two threads to perform the task in parallel.
+ * 
+ * @author Lokesh
+ * Since 02/25/2018
+ *
+ */
 public class LogEventItemReducerWriter extends ListItemWriter<LogEvent> implements StepExecutionListener {
 	private static final Logger log = LoggerFactory.getLogger(LogEventItemReducerWriter.class);
 

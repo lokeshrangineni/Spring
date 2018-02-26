@@ -1,7 +1,5 @@
 package com.assignment.log.event.job;
 
-import static org.hamcrest.CoreMatchers.nullValue;
-
 import java.util.Map;
 
 import javax.sql.DataSource;
@@ -25,6 +23,14 @@ import org.springframework.core.io.ClassPathResource;
 import com.assignment.log.event.config.ApplicationConstants;
 import com.assignment.log.event.model.LogEvent;
 
+
+/**
+ * This is class will initiate a batch job to process the log file. This class holds all the configuration related to spring batch job.
+ * 
+ * @author Lokesh
+ * Since 02/25/2018
+ *
+ */
 @Configuration
 @EnableBatchProcessing
 public class BatchConfiguration {
@@ -42,10 +48,6 @@ public class BatchConfiguration {
     @Autowired
     private Environment env;
     
-    private String fileName;
-    
-    private int chunkSize;
-
     public JobBuilderFactory getJobBuilderFactory() {
 		return jobBuilderFactory;
 	}
@@ -70,38 +72,32 @@ public class BatchConfiguration {
 		this.dataSource = dataSource;
 	}
 
-	public int getChunkSize() {
-		return chunkSize;
-	}
-
-	public void setChunkSize(int chunkSize) {
-		this.chunkSize = chunkSize;
-	}
-
 	@Bean
     public FlatFileItemReader<Map<String, Object>> reader() {
         FlatFileItemReader<Map<String, Object>> reader = new FlatFileItemReader<Map<String, Object>>();
-        populateFileName();
-        reader.setResource(new ClassPathResource(this.fileName));
+        String fileName = populateFileName();
+        reader.setResource(new ClassPathResource(fileName));
         JsonLineMapper jsonLineMapper = new JsonLineMapper();
         reader.setLineMapper(jsonLineMapper);
         return reader;
     }
 
-	private void populateFileName() {
+	private String populateFileName() {
 		String fullFilePath = null;
+		String finalFileName;
 		
 		try {
-			fullFilePath = env.getProperty("fullFilePath");
+			fullFilePath = env.getProperty("fileName");
 		}catch(Exception e) {
-			log.info("Environment varialble [fullFilePath] is not found through command line argument, so loading default test file as part of the resources directory.");
+			log.info("Environment varialble [fileName] is not found through command line argument, so loading default test file as part of the resources directory.");
 		}
 		
 		if(fullFilePath==null) {
-        	this.fileName = "ApplicationLog.json";
+        	finalFileName = "ApplicationLog.json";
         }else {
-        	this.fileName = fullFilePath;
+        	finalFileName = fullFilePath;
         }
+		return finalFileName;
 	}
 
     @Bean
@@ -116,26 +112,24 @@ public class BatchConfiguration {
     }
     
     @Bean
-    public Job processLogJob(JobCompletionNotificationListener listener, JobStepExecutionListener stepListener) {
+    public Job processLogJob(JobCompletionNotificationListener jobListener, JobStepExecutionListener stepListener) {
         return jobBuilderFactory.get("logAnalyticsJob")
                 .incrementer(new RunIdIncrementer())
-                .listener(listener)
-                .flow(step1(stepListener))
+                .listener(jobListener)
+                .flow(logFileProcessingStep(stepListener))
                 .end()
                 .build();
     }
 
     @Bean
-    public Step step1(JobStepExecutionListener stepListener) {
-    	if(this.chunkSize == 0) {
-    		this.chunkSize = ApplicationConstants.DEFAULT_SPRING_BATCH_CHUNK_SIZE;
-    	}
+    public Step logFileProcessingStep(JobStepExecutionListener stepListener) {
+    	int chunkSize = ApplicationConstants.DEFAULT_SPRING_BATCH_CHUNK_SIZE;
     	
-        return stepBuilderFactory.get("step1").listener(stepListener)
-                .<Map<String, Object>, LogEvent> chunk(this.chunkSize) //reader batch size
+        return stepBuilderFactory.get("Log_File_Processing_Step")
+        		.listener(stepListener)
+                .<Map<String, Object>, LogEvent> chunk(chunkSize) //reader batch size
                 .reader(reader())
                 .processor(processor())
-                
                 .writer(logEventReducerwriter())
                 .build();
     }
