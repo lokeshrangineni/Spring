@@ -37,7 +37,7 @@ public class LogItemProcessor implements ItemProcessor<Map<String,Object>,LogEve
         event.setTimestamp(timestamp);
         
 
-        log.info("Converting (" + logEventMap + ") into (" + event + ")");
+        log.debug("Converting (" + logEventMap + ") into (" + event + ")");
 
         return event;
     }

@@ -46,7 +46,6 @@ public class LogEventItemReducerWriter extends ListItemWriter<LogEvent> implemen
 
 	ExecutionContext executionContext;
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public void write(final List<? extends LogEvent> items) throws Exception {
 		List<LogEvent> mergedListLogEvents = mergeChunkListWithPreviousChunkList(items);
@@ -58,45 +57,27 @@ public class LogEventItemReducerWriter extends ListItemWriter<LogEvent> implemen
 			int arraySplitSize = arraySize / 2;
 			processInTwoThreadsWhenChunkIsLarge(mergedListLogEvents,arraySplitSize);
 		}
-		log.debug("Current chunk is not having any log events, so doing nothing.");
 		
 	}
-
+	//TODO: change argument type
 	private List<LogEvent> mergeChunkListWithPreviousChunkList(final List<? extends LogEvent> items) {
-		List<LogEvent> previousChunkRemainingData = (List<LogEvent>) this.executionContext.get("CHUNK_REMAINING_DATA");
+		List<LogEvent> previousChunkProcessedData = (List<LogEvent>) this.executionContext.get("CHUNK_REMAINING_DATA");
 		List<LogEvent> currentChunkItems = (List<LogEvent>) items;
 
-		List<LogEvent> mergedListLogEvents = mergeListsWithoutDuplicatesAndNullSafe(previousChunkRemainingData, currentChunkItems);
+		List<LogEvent> mergedListLogEvents = mergeListsWithoutDuplicatesAndNullSafe(previousChunkProcessedData, currentChunkItems);
 		this.executionContext.remove("CHUNK_REMAINING_DATA");
 		return mergedListLogEvents;
 	}
 	
 	private void processInSingleThreadWhenChunkIsSmall(List<LogEvent> mergedListLogEvents){
-		ExecutorService executor = Executors.newFixedThreadPool(1);
-		LongTimeTakingEventsProcessorCallable eventReducerCallable = new LongTimeTakingEventsProcessorCallable(mergedListLogEvents);
-		beanFactory.autowireBean(eventReducerCallable);
-		Future<List<LogEvent>> futureTask = executor.submit(eventReducerCallable);
-		
-		while (true) {
-			if (futureTask.isDone()) {
-				List<LogEvent> futureTaskResult;
-				try {
-					futureTaskResult = futureTask.get();
-				} catch (InterruptedException | ExecutionException e) {
-					log.error(" Exception occurred while performing reducer operation in thread Name=["
-							+ Thread.currentThread().getName() + "]");
-					throw new LogEventServiceException(e.getMessage());
-				}
-				persistReducedEventLogs(futureTaskResult);
-				log.info(" Successfully done with writer job..Killing the writer thread. Thread Name=["
-						+ Thread.currentThread().getName() + "]");
-				break;
-			}
-		}
+		List<LogEvent> reducedResult = this.getEventService().processLogEventsForLongTimeTakingEvents(mergedListLogEvents);
+		persistReducedEventLogs(reducedResult);
 	}
 
 	
 	private void processInTwoThreadsWhenChunkIsLarge(List<LogEvent> mergedListLogEvents, int arraySplitSize){
+		log.info("Processing current chunk with two threads. current Chunk size=["+mergedListLogEvents.size()+"]");
+		//Ideally we should span number of threads dynamically based on number of cores of the processor
 		ExecutorService executor = Executors.newFixedThreadPool(2);
 		List<LogEvent> subList1 = (List<LogEvent>) mergedListLogEvents.subList(0, arraySplitSize);
 		List<LogEvent> subList2 = (List<LogEvent>) mergedListLogEvents.subList(arraySplitSize, mergedListLogEvents.size());
@@ -108,19 +89,20 @@ public class LogEventItemReducerWriter extends ListItemWriter<LogEvent> implemen
 		Future<List<LogEvent>> futureTask1 = executor.submit(eventReducerCallable1);
 		Future<List<LogEvent>> futureTask2 = executor.submit(eventReducerCallable2);
 		
+		//we can implement the timeout functionality but that timeout feature can be implemented based on use case.
 		while (true) {
 			if (futureTask1.isDone() && futureTask2.isDone()) {
-				List<LogEvent> futureTaskResult1;
-				List<LogEvent> futureTaskResult2;
-				try {
-					futureTaskResult1 = futureTask1.get();
-					futureTaskResult2 = futureTask2.get();
-					persistReducedEventLogs(futureTaskResult1);
-					persistReducedEventLogs(futureTaskResult2);
+			try	{
+					handleFutureTaskResult(futureTask1);
+					handleFutureTaskResult(futureTask2);
+					//shut down executor service
+					executor.shutdown();
+					log.info(" Successfully done with writer job..Killing the writer thread. Thread Name=["
+							+ Thread.currentThread().getName() + "]");
 				} catch (InterruptedException | ExecutionException e) {
 					log.error(" Exception occurred while performing reducer operation in thread Name=["
 							+ Thread.currentThread().getName() + "]");
-					throw new LogEventServiceException(e.getMessage());
+					throw new LogEventServiceException(e.getMessage(), e);
 				}
 				log.info(" Successfully done with writer job..Killing the writer thread. Thread Name=["
 						+ Thread.currentThread().getName() + "]");
@@ -128,12 +110,21 @@ public class LogEventItemReducerWriter extends ListItemWriter<LogEvent> implemen
 			}
 		}
 		
-		
 	}
 	
+	
+	public void handleFutureTaskResult(Future<List<LogEvent>> futureTask) throws InterruptedException, ExecutionException {
+		if (futureTask.isDone()) {
+			List<LogEvent> futureTaskResult;
+				futureTaskResult = futureTask.get();
+				persistReducedEventLogs(futureTaskResult);
+		}
+	}
+
+		
 	public void persistReducedEventLogs(List<LogEvent> reducedEventLogs) {
 		log.debug(
-				"Going to persist staged records to DB for further processing. Collection=[" + reducedEventLogs + "]");
+				"Going to persist staged records to Job Execution Context for further processing. Collection=[" + reducedEventLogs + "]");
 		if (reducedEventLogs != null & !reducedEventLogs.isEmpty()) {
 			List<LogEvent> previousChunkRemainingData = (List<LogEvent>)this.executionContext.get("CHUNK_REMAINING_DATA");
 			List<LogEvent> mergedList = reducedEventLogs;
@@ -155,7 +146,7 @@ public class LogEventItemReducerWriter extends ListItemWriter<LogEvent> implemen
 			return previousChunkRemainingData;
 		}
 		
-		
+		//remove the duplicate log events in case if there are any. 
 		for (LogEvent logEvent : currentChunkItems) {
 			if(!previousChunkRemainingData.contains(logEvent)) {
 				previousChunkRemainingData.add(logEvent);

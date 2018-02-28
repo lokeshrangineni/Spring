@@ -8,7 +8,6 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -25,8 +24,7 @@ import com.assignment.log.event.model.ProcessedLog;
  *
  */
 @Service("eventService")
-@ComponentScan
-@Transactional(propagation = Propagation.REQUIRED)
+@Transactional(propagation = Propagation.SUPPORTS)
 public class LogEventServiceImpl implements ILogEventsService {
 	private static final Logger logger = LoggerFactory.getLogger(LogEventServiceImpl.class);
 	@Autowired
@@ -41,11 +39,9 @@ public class LogEventServiceImpl implements ILogEventsService {
 	}
 
 	@Override
+	@Transactional(propagation = Propagation.REQUIRED)
 	public void saveLongTimeTakingEvents(ProcessedLog processedLog) throws LogEventServiceException {
 		try {
-			logger.info("Logging events for debug, Event duration="+processedLog.getEventDuration()+", ID=["+processedLog.getId()+"]");
-			
-			
 			this.getLogEventDao().saveProcessedEventLog(processedLog);
 		} catch (DataAccessException e) {
 			throw new LogEventServiceException("Error occurred while saving processed event log, root cause - ", e);
@@ -53,6 +49,7 @@ public class LogEventServiceImpl implements ILogEventsService {
 	}
 
 	@Override
+	@Transactional(propagation = Propagation.REQUIRED)
 	public void saveOrphanedEventLogs(List<LogEvent> eventsList) throws LogEventServiceException {
 		try {
 			this.getLogEventDao().saveOrphanedEventLogs(eventsList);
@@ -73,6 +70,10 @@ public class LogEventServiceImpl implements ILogEventsService {
 	}
 	
 
+	/**
+	 * This method is not implementing pagination so it may not be scalable. 
+	 * 
+	 */
 	@Override
 	public List<ProcessedLog> getLongTimeTakingLogEvents() throws LogEventServiceException {
 		List<ProcessedLog> longTimeTakingEvents;
@@ -104,6 +105,7 @@ public class LogEventServiceImpl implements ILogEventsService {
 								" long time taking event --- Current Thread Name:[" + Thread.currentThread().getName()
 										+ "], Log Event Details=[" + timeTakingEvent.toString() + "]");
 					}else {
+						//WE can store all the events in case if we need for further processing. As of now deleting these events.
 						logger.debug(" removing not - long time taking event --- Current Thread Name:["
 								+ Thread.currentThread().getName() + "], Event Duration=[" + eventDuration
 								+ "], Log Event Details=[" + logEntry + "]");

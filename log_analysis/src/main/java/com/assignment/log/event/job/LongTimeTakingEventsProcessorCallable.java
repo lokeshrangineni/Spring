@@ -18,7 +18,6 @@ import com.assignment.log.event.service.ILogEventsService;
  * Since 02/25/2018
  *
  */
-@ComponentScan
 @Component
 @Scope("prototype")
 public class LongTimeTakingEventsProcessorCallable implements Callable<List<LogEvent>> {

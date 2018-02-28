@@ -10,6 +10,7 @@ import org.springframework.batch.core.listener.JobExecutionListenerSupport;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.assignment.log.event.config.ApplicationConstants;
 import com.assignment.log.event.model.ProcessedLog;
 import com.assignment.log.event.service.ILogEventsService;
 
@@ -48,7 +49,7 @@ public class JobCompletionNotificationListener extends JobExecutionListenerSuppo
 		
 	private void printLongTimeTakingEventsToLog() {
 		List<ProcessedLog> longTimeTakingLogEvents = eventService.getLongTimeTakingLogEvents();
-		log.info("!!! Total number of long time taking events found in this job=["+longTimeTakingLogEvents.size()+"] ...!!!");
+		log.info("!!! Total number of events=["+longTimeTakingLogEvents.size()+"] taking more than ["+ApplicationConstants.DEFAULT_CAPTURE_EVENT_TIME+"] seconds...!!!");
 		
 		log.info(" ------------------------------------------ Printing long time taking events ------------------------------");
 		for (ProcessedLog longTimeTakingLogEvent : longTimeTakingLogEvents) {

@@ -8,7 +8,7 @@ package com.assignment.log.event.config;
  */
 public interface ApplicationConstants {
 	
-	public static final int DEFAULT_SPRING_BATCH_CHUNK_SIZE=40;
+	public static final int DEFAULT_SPRING_BATCH_CHUNK_SIZE=1000;
 	public static final int DEFAULT_CAPTURE_EVENT_TIME=4;
 
 }

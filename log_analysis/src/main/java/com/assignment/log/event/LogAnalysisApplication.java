@@ -21,7 +21,7 @@ public class LogAnalysisApplication {
    private static final Logger log = LoggerFactory.getLogger(LogAnalysisApplication.class);
 
 	public static void main(String[] args) {
-		log.info("Staring spring boot application");
+		log.info("Staring Log Analysis application");
 		SpringApplication.run(LogAnalysisApplication.class, args);
 	}
 
